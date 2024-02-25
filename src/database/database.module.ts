@@ -18,12 +18,12 @@ import { ConfigModule } from '../config/config.module';
         database: configService.get('DB_DATABASE'),
         entities: [User, Auth],
         synchronize: true,
+        extra: {
+          trustServerCertificate: true,
+        },
       }),
       inject: [ConfigService],
     }),
-    //    ConfigModule,
   ],
-  //  providers: [TypeOrmModule],
-  exports: [TypeOrmModule],
 })
 export class DatabaseModule {}
