@@ -1,5 +1,9 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { IsDate, IsEmail, IsStrongPassword, MinLength } from 'class-validator';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class User {
@@ -13,18 +17,15 @@ export class User {
   lastName: string;
 
   @Column()
-  @IsEmail()
   email: string;
 
   @Column()
-  @IsStrongPassword()
-  @MinLength(10)
   password: string;
 
   @Column({ default: true })
   isActive: boolean;
 
-  @IsDate()
   @Column()
+  @CreateDateColumn()
   createdAt: Date;
 }
