@@ -1,5 +1,11 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { IsDate } from 'class-validator';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { User } from './users.entity';
 
 @Entity()
@@ -10,11 +16,11 @@ export class Auth {
   @Column()
   token: string;
 
-  @Column()
-  @ManyToOne(() => User, (user) => user.id)
+  @JoinColumn()
+  @OneToOne(() => User)
   user: string;
 
   @Column()
-  @IsDate()
+  @CreateDateColumn()
   createdAt: Date;
 }
