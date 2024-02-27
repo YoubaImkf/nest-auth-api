@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { AddUserDto } from 'src/dtos/addUser.dto';
 import { UserDto } from '../dtos/user.dto';
 import { plainToInstance } from 'class-transformer';
+import { ValidationError, validate } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -18,7 +19,7 @@ export class UsersService {
   }
 
   async getUserAsync(id: string): Promise<UserDto | null> {
-    return this.userRepository.findOneBy({ id });
+    return await this.userRepository.findOneBy({ id });
   }
 
   async deleteUserAsync(id: string): Promise<void> {
@@ -26,7 +27,17 @@ export class UsersService {
   }
 
   async addUserAsync(addUserDto: AddUserDto): Promise<User> {
+    const validationErrors = await validate(addUserDto);
+    if (validationErrors.length > 0) {
+      throw new ValidationError();
+    }
     const user: User = plainToInstance(User, addUserDto);
-    return this.userRepository.save(user);
+    return await this.userRepository.save(user);
+  }
+
+  async checkIfUserExistByEmail(email: string): Promise<boolean> {
+    const user = await this.userRepository.findOneBy({ email });
+    if (user) return true;
+    else return false;
   }
 }
