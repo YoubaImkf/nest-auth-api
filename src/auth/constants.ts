@@ -1,4 +1,2 @@
-export const jwtConstants = {
-  secret:
-    'daejhd¨pjhgY77YHGUU9JIKl,kfjez!:falhIU89HihbjK/koit-&hjMLPOIUUYTRrrZSXFcBFVGFAkjkd',
-};
+export const tokenChars =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
