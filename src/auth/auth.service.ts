@@ -59,8 +59,8 @@ export class AuthService {
     if (!auth) {
       return false;
     }
-
-    return await this.matchHash(auth.token, token);
+    console.log(auth.token === token);
+    return auth.token === token;
   }
 
   // ---Private methods---

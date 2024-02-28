@@ -19,6 +19,7 @@ export class AuthGuard {
     }
     try {
       const payload = await this.authService.validateToken(token);
+
       request['auth'] = payload;
     } catch {
       throw new UnauthorizedException();
