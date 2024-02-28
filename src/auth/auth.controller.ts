@@ -1,8 +1,20 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AddUserDto } from '../dtos/addUser.dto';
+import { AuthGuard } from './auth.guard';
+import { LoginDto } from '../dtos/login.dto';
 
+@ApiBearerAuth()
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
@@ -10,7 +22,19 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('register')
-  signIn(@Body() addUserDto: AddUserDto): Promise<AddUserDto> {
-    return this.authService.register(addUserDto);
+  async register(@Body() addUserDto: AddUserDto): Promise<AddUserDto> {
+    return await this.authService.register(addUserDto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    return await this.authService.login(loginDto);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('userinfo')
+  getProfile(@Request() req) {
+    return req.user;
   }
 }
