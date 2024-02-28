@@ -35,9 +35,7 @@ export class UsersService {
     return await this.userRepository.save(user);
   }
 
-  async checkIfUserExistByEmail(email: string): Promise<boolean> {
-    const user = await this.userRepository.findOneBy({ email });
-    if (user) return true;
-    else return false;
+  async getUserByEmail(email: string): Promise<User> {
+    return await this.userRepository.findOneBy({ email });
   }
 }
