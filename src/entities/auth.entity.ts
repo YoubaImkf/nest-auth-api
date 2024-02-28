@@ -18,7 +18,7 @@ export class Auth {
 
   @JoinColumn()
   @OneToOne(() => User)
-  user: string;
+  user: User;
 
   @Column()
   @CreateDateColumn()
