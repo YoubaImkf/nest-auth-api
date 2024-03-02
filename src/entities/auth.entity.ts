@@ -17,7 +17,7 @@ export class Auth {
   token: string;
 
   @JoinColumn()
-  @OneToOne(() => User)
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
   user: User;
 
   @Column()
