@@ -7,12 +7,14 @@ import {
   Post,
   UseGuards,
   Request,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AddUserDto } from '../dtos/addUser.dto';
 import { AuthGuard } from './auth.guard';
 import { LoginDto } from '../dtos/login.dto';
+import { Response } from 'express';
 
 @ApiBearerAuth()
 @Controller('auth')
@@ -28,13 +30,16 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return await this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return await this.authService.login(loginDto, response);
   }
 
   @UseGuards(AuthGuard)
   @Get('userinfo')
-  getProfile(@Request() req) {
-    return req.user;
+  getProfile() {
+    return 'Successfully get';
   }
 }

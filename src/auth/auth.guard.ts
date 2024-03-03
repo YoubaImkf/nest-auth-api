@@ -13,14 +13,17 @@ export class AuthGuard {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-
+    console.log('token extracted: ' + token);
     if (!token) {
       throw new UnauthorizedException();
     }
-    try {
-      const payload = await this.authService.validateToken(token);
 
-      request['auth'] = payload;
+    try {
+      const payload = await this.authService.validateToken(token, request);
+
+      if (!payload) {
+        new UnauthorizedException();
+      }
     } catch {
       throw new UnauthorizedException();
     }
