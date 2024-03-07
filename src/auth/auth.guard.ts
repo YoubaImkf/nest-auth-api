@@ -14,14 +14,14 @@ export class AuthGuard {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
     console.log('token extracted: ' + token);
+
     if (!token) {
       throw new UnauthorizedException();
     }
 
     try {
-      const payload = await this.authService.validateToken(token, request);
-
-      if (!payload) {
+      const payload = await this.authService.validateToken(token);
+      if (payload === false) {
         new UnauthorizedException();
       }
     } catch {
