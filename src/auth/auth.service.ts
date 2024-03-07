@@ -2,26 +2,21 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  Req,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { AddUserDto } from '../dtos/addUser.dto';
 import * as argon2 from 'argon2';
-import { tokenChars } from './constants';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Auth } from '../entities/auth.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/entities/users.entity';
 import { LoginDto } from '../dtos/login.dto';
+import { tokenConstants } from './constants';
 import crc from 'crc';
-import { Request, Response } from 'express';
 
 @Injectable()
 export class AuthService {
-  private readonly prefix = 'oat_';
-  private readonly cookieName = 'user_id';
-
   constructor(
     private usersService: UsersService,
     @InjectRepository(Auth)
@@ -29,7 +24,7 @@ export class AuthService {
   ) {}
 
   async register(addUserDto: AddUserDto): Promise<AddUserDto> {
-    const hash = await this.hashData(addUserDto.password);
+    const hash = await this.hashPassword(addUserDto.password);
     const userExist = await this.usersService.getUserByEmail(addUserDto.email);
 
     if (!userExist) {
@@ -40,7 +35,7 @@ export class AuthService {
     }
   }
 
-  async login(userLoginDto: LoginDto, response: Response) {
+  async login(userLoginDto: LoginDto) {
     const user = await this.usersService.getUserByEmail(userLoginDto.email);
 
     if (!user) throw new NotFoundException();
@@ -54,60 +49,41 @@ export class AuthService {
       throw new BadRequestException('Credientials are incorrect');
 
     const plainToken = this.generateRandomString(90);
-
     const hashedToken = await this.generateTokenHash(plainToken);
 
     const encodedPlainToken = await this.encodeBase64(plainToken);
-    const concatPrefixToken = this.prefix + encodedPlainToken;
+    const concatPrefixToken = tokenConstants.prefix + encodedPlainToken;
 
-    await this.storeToken(hashedToken, user);
-
-    response.clearCookie(this.cookieName);
-    response.cookie(this.cookieName, user.id, {
-      httpOnly: true,
-      sameSite: 'strict',
-      expires: new Date(Date.now() + 60 * 60 * 1000),
-      secure: true,
-    });
+    await this.saveOrUpdate(hashedToken, user);
 
     return { access_token: concatPrefixToken };
   }
 
-  async validateToken(
-    token: string,
-    @Req() request: Request,
-  ): Promise<boolean> {
-    console.log('auth-token: ' + token);
-
-    if (!token.startsWith(this.prefix)) {
+  async validateToken(token: string): Promise<boolean> {
+    if (!token.startsWith(tokenConstants.prefix)) {
       return false;
     }
 
-    const tokenWhithoutPrefix = token.substring(this.prefix.length);
-
+    const tokenWhithoutPrefix = token.substring(tokenConstants.prefix.length);
     const plainToken = await this.decodeBase64(tokenWhithoutPrefix);
 
-    const calculatedChecksum = this.calculateCheckSum(plainToken);
-    const tokenwithchecksum = plainToken + calculatedChecksum;
+    const hashedToken = await this.generateTokenHash(plainToken);
+    const tokenInDatabse = await this.getToken(hashedToken);
 
-    const cookieUserId = request.cookies['user_id'];
-
-    const hashedToken = await this.getToken(cookieUserId);
-
-    if (!hashedToken) {
+    if (!tokenInDatabse) {
       throw new UnauthorizedException();
     }
 
-    const matchHash = await this.matchHash(hashedToken, tokenwithchecksum);
-
-    return matchHash;
+    return await this.matchHash(tokenInDatabse, plainToken);
   }
 
-  // ---Private methods---
-  private async getToken(userId: string): Promise<string | undefined> {
+  /**
+   * --- Private methods ---
+   */
+  private async getToken(token: string): Promise<string | undefined> {
     try {
       const auth = await this.authRepository.findOneBy({
-        user: { id: userId },
+        token: token,
       });
       console.log(auth.token);
       return auth?.token;
@@ -120,12 +96,10 @@ export class AuthService {
     const calculatedChecksum = this.calculateCheckSum(plainToken);
     const token = plainToken + calculatedChecksum;
 
-    const hashToken = await this.hashData(token);
-
-    return hashToken;
+    return await this.hashToken(token);
   }
 
-  private async storeToken(hashedToken: string, user: User): Promise<void> {
+  private async saveOrUpdate(hashedToken: string, user: User): Promise<void> {
     let auth = await this.authRepository.findOneBy({
       user: { id: user.id },
     });
@@ -145,8 +119,10 @@ export class AuthService {
     let token = '';
 
     for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * tokenChars.length);
-      token += tokenChars[randomIndex];
+      const randomIndex = Math.floor(
+        Math.random() * tokenConstants.Chars.length,
+      );
+      token += tokenConstants.Chars[randomIndex];
     }
     return token;
   }
@@ -171,7 +147,11 @@ export class AuthService {
     return await argon2.verify(hash, notHashed);
   }
 
-  private async hashData(data: string): Promise<string> {
+  private async hashPassword(data: string): Promise<string> {
     return await argon2.hash(data);
+  }
+
+  private async hashToken(data: string): Promise<string> {
+    return await argon2.hash(data, { salt: Buffer.from(tokenConstants.salt) });
   }
 }
