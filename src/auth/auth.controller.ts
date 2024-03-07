@@ -6,8 +6,6 @@ import {
   HttpStatus,
   Post,
   UseGuards,
-  Request,
-  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -36,6 +34,6 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Get('userinfo')
   getProfile() {
-    return 'Successfully get';
+    return 'Successfull Get route';
   }
 }
