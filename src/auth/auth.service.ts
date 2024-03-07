@@ -48,7 +48,7 @@ export class AuthService {
     if (!passwordMatches)
       throw new BadRequestException('Credientials are incorrect');
 
-    const plainToken = this.generateRandomString(90);
+    const plainToken = this.generateRandomString(180);
     const hashedToken = await this.generateTokenHash(plainToken);
 
     const encodedPlainToken = await this.encodeBase64(plainToken);
@@ -59,34 +59,44 @@ export class AuthService {
     return { access_token: concatPrefixToken };
   }
 
-  async validateToken(token: string): Promise<boolean> {
-    if (!token.startsWith(tokenConstants.prefix)) {
+  async validateToken(tokenInput: string): Promise<boolean> {
+    if (!tokenInput.startsWith(tokenConstants.prefix)) {
       return false;
     }
 
-    const tokenWhithoutPrefix = token.substring(tokenConstants.prefix.length);
+    const tokenWhithoutPrefix = tokenInput.substring(
+      tokenConstants.prefix.length,
+    );
     const plainToken = await this.decodeBase64(tokenWhithoutPrefix);
 
     const hashedToken = await this.generateTokenHash(plainToken);
-    const tokenInDatabse = await this.getToken(hashedToken);
+    const auth = await this.getToken(hashedToken);
+    const { token, expiresAt } = auth;
 
-    if (!tokenInDatabse) {
+    const expiredBoolean = await this.isTokenExprired(expiresAt);
+
+    if (!token || !expiredBoolean) {
       throw new UnauthorizedException();
     }
 
-    return await this.matchHash(tokenInDatabse, plainToken);
+    return await this.matchHash(token, plainToken);
   }
 
   /**
    * --- Private methods ---
    */
-  private async getToken(token: string): Promise<string | undefined> {
+  private async getToken(
+    token: string,
+  ): Promise<{ token: string; expiresAt: Date }> {
     try {
       const auth = await this.authRepository.findOneBy({
         token: token,
       });
-      console.log(auth.token);
-      return auth?.token;
+
+      return {
+        token: auth.token,
+        expiresAt: auth.expiresAt,
+      };
     } catch (error) {
       throw new Error('Error while fetching tokens.');
     }
@@ -106,9 +116,11 @@ export class AuthService {
 
     if (auth) {
       auth.token = hashedToken;
+      auth.expiresAt = this.setExpirationDate(1);
     } else {
       auth = new Auth();
       auth.token = hashedToken;
+      auth.expiresAt = this.setExpirationDate(1);
       auth.user = user;
     }
 
@@ -153,5 +165,16 @@ export class AuthService {
 
   private async hashToken(data: string): Promise<string> {
     return await argon2.hash(data, { salt: Buffer.from(tokenConstants.salt) });
+  }
+
+  private setExpirationDate(durationHours: number): Date {
+    const now = new Date();
+    const expirationTime = now.getTime() + durationHours * 60 * 60 * 1000;
+    return new Date(expirationTime);
+  }
+
+  private async isTokenExprired(expiresAt: Date): Promise<boolean> {
+    const currentDate = new Date();
+    return expiresAt > currentDate; // Returns true if the expiration date is in the future
   }
 }

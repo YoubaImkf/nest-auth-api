@@ -16,6 +16,9 @@ export class Auth {
   @Column()
   token: string;
 
+  @Column()
+  expiresAt: Date;
+
   @JoinColumn()
   @OneToOne(() => User, { onDelete: 'CASCADE' })
   user: User;
