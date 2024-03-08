@@ -20,8 +20,9 @@ export class AuthGuard {
 
     try {
       const payload = await this.authService.validateToken(token);
-      if (payload == false) {
-        new UnauthorizedException();
+
+      if (payload) {
+        request['user'] = payload;
       }
     } catch {
       throw new UnauthorizedException();

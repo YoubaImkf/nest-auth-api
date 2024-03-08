@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -33,7 +34,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Get('userinfo')
-  getProfile() {
-    return 'Successfull Get route';
+  getProfile(@Request() req) {
+    return req.user;
   }
 }
