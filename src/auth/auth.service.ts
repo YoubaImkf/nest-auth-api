@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { AddUserDto } from '../dtos/addUser.dto';
+import { UserDto } from '../dtos/user.dto';
 import * as argon2 from 'argon2';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Auth } from '../entities/auth.entity';
@@ -13,7 +14,7 @@ import { Repository } from 'typeorm';
 import { User } from 'src/entities/users.entity';
 import { LoginDto } from '../dtos/login.dto';
 import { tokenConstants } from './constants';
-import crc from 'crc';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private usersService: UsersService,
     @InjectRepository(Auth)
     private authRepository: Repository<Auth>,
+    private tokenService: TokenService,
   ) {}
 
   async register(addUserDto: AddUserDto): Promise<AddUserDto> {
@@ -48,10 +50,10 @@ export class AuthService {
     if (!passwordMatches)
       throw new BadRequestException('Credientials are incorrect');
 
-    const plainToken = this.generateRandomString(180);
-    const hashedToken = await this.generateTokenHash(plainToken);
+    const plainToken = this.tokenService.generateRandomString(180);
+    const hashedToken = await this.tokenService.generateTokenHash(plainToken);
 
-    const encodedPlainToken = await this.encodeBase64(plainToken);
+    const encodedPlainToken = await this.tokenService.encodeBase64(plainToken);
     const concatPrefixToken = tokenConstants.prefix + encodedPlainToken;
 
     await this.saveOrUpdate(hashedToken, user);
@@ -59,27 +61,35 @@ export class AuthService {
     return { access_token: concatPrefixToken };
   }
 
-  async validateToken(tokenInput: string): Promise<boolean> {
+  async validateToken(tokenInput: string): Promise<UserDto> {
     if (!tokenInput.startsWith(tokenConstants.prefix)) {
-      return false;
+      throw new UnauthorizedException();
     }
 
-    const tokenWhithoutPrefix = tokenInput.substring(
+    const tokenWithoutPrefix = tokenInput.substring(
       tokenConstants.prefix.length,
     );
-    const plainToken = await this.decodeBase64(tokenWhithoutPrefix);
+    const plainToken = await this.tokenService.decodeBase64(tokenWithoutPrefix);
 
-    const hashedToken = await this.generateTokenHash(plainToken);
+    const hashedToken = await this.tokenService.generateTokenHash(plainToken);
     const auth = await this.getToken(hashedToken);
     const { token, expiresAt } = auth;
 
-    const expiredBoolean = await this.isTokenExprired(expiresAt);
+    const user = await this.getUserByToken(hashedToken);
+
+    console.log('user: ' + user);
+    const expiredBoolean = await this.tokenService.isTokenExprired(expiresAt);
 
     if (!token || !expiredBoolean) {
       throw new UnauthorizedException();
     }
+    const verifyPasswordBoolean = await this.matchHash(token, plainToken);
 
-    return await this.matchHash(token, plainToken);
+    if (!verifyPasswordBoolean) {
+      new UnauthorizedException();
+    }
+
+    return user;
   }
 
   /**
@@ -93,6 +103,10 @@ export class AuthService {
         token: token,
       });
 
+      if (!auth.token || !auth.expiresAt) {
+        throw new UnauthorizedException();
+      }
+
       return {
         token: auth.token,
         expiresAt: auth.expiresAt,
@@ -102,11 +116,24 @@ export class AuthService {
     }
   }
 
-  private async generateTokenHash(plainToken: string): Promise<string> {
-    const calculatedChecksum = this.calculateCheckSum(plainToken);
-    const token = plainToken + calculatedChecksum;
+  async getUserByToken(token: string): Promise<UserDto | undefined> {
+    const auth = await this.authRepository.findOne({
+      where: { token },
+      relations: ['user'],
+    });
 
-    return await this.hashToken(token);
+    return this.mapUserToDto(auth.user);
+  }
+
+  private mapUserToDto(user: User): UserDto {
+    const userDto: UserDto = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+    };
+    return userDto;
   }
 
   private async saveOrUpdate(hashedToken: string, user: User): Promise<void> {
@@ -116,43 +143,15 @@ export class AuthService {
 
     if (auth) {
       auth.token = hashedToken;
-      auth.expiresAt = this.setExpirationDate(1);
+      auth.expiresAt = this.tokenService.setExpirationDate(1);
     } else {
       auth = new Auth();
       auth.token = hashedToken;
-      auth.expiresAt = this.setExpirationDate(1);
+      auth.expiresAt = this.tokenService.setExpirationDate(1);
       auth.user = user;
     }
 
     await this.authRepository.save(auth);
-  }
-
-  private generateRandomString(length: number): string {
-    let token = '';
-
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(
-        Math.random() * tokenConstants.Chars.length,
-      );
-      token += tokenConstants.Chars[randomIndex];
-    }
-    return token;
-  }
-
-  private calculateCheckSum(token: string): string {
-    return crc.crc32(token).toString(16);
-  }
-
-  private async encodeBase64(token: string): Promise<string> {
-    try {
-      return Buffer.from(token).toString('base64');
-    } catch (error) {
-      throw new Error('Error encoding token to base64.');
-    }
-  }
-
-  private async decodeBase64(token: string): Promise<string> {
-    return Buffer.from(token, 'base64').toString('ascii');
   }
 
   private async matchHash(hash: string, notHashed: string): Promise<boolean> {
@@ -161,20 +160,5 @@ export class AuthService {
 
   private async hashPassword(data: string): Promise<string> {
     return await argon2.hash(data);
-  }
-
-  private async hashToken(data: string): Promise<string> {
-    return await argon2.hash(data, { salt: Buffer.from(tokenConstants.salt) });
-  }
-
-  private setExpirationDate(durationHours: number): Date {
-    const now = new Date();
-    const expirationTime = now.getTime() + durationHours * 60 * 60 * 1000;
-    return new Date(expirationTime);
-  }
-
-  private async isTokenExprired(expiresAt: Date): Promise<boolean> {
-    const currentDate = new Date();
-    return expiresAt > currentDate; // Returns true if the expiration date is in the future
   }
 }
