@@ -40,10 +40,6 @@ export class TokenService {
     return Buffer.from(token, 'base64').toString('ascii');
   }
 
-  private async hashToken(data: string): Promise<string> {
-    return await argon2.hash(data, { salt: Buffer.from(tokenConstants.salt) });
-  }
-
   setExpirationDate(durationHours: number): Date {
     const now = new Date();
     const expirationTime = now.getTime() + durationHours * 60 * 60 * 1000;
@@ -53,5 +49,12 @@ export class TokenService {
   async isTokenExprired(expiresAt: Date): Promise<boolean> {
     const currentDate = new Date();
     return expiresAt > currentDate; // Returns true if the expiration date is in the future
+  }
+
+  /**
+   * --- Private methods ---
+   */
+  private async hashToken(data: string): Promise<string> {
+    return await argon2.hash(data, { salt: Buffer.from(tokenConstants.salt) });
   }
 }
