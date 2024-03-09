@@ -28,8 +28,6 @@ The API provides authentication functionalities for user registration, login, an
 register with a unique email address and password, authenticate themselves via login credentials, and validate access
 tokens for authorized endpoints.
 
-⚠️ Architecture will change soon ⚠️
-
 ## Installation
 
 ```bash
@@ -48,6 +46,8 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+![sample-api-swagger](public/sample-api-swagger.png)
 
 ## Test
 
