@@ -11,7 +11,7 @@ import { ValidationError, validate } from 'class-validator';
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async getAllAsync(): Promise<UserDto[]> {

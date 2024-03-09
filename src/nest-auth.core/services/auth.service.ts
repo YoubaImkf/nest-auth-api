@@ -19,10 +19,10 @@ import { TokenService } from './token.service';
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
+    private readonly usersService: UsersService,
     @InjectRepository(Auth)
-    private authRepository: Repository<Auth>,
-    private tokenService: TokenService,
+    private readonly authRepository: Repository<Auth>,
+    private readonly tokenService: TokenService,
   ) {}
 
   async register(addUserDto: AddUserDto): Promise<AddUserDto> {

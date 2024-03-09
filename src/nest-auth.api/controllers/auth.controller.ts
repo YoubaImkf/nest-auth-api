@@ -18,7 +18,7 @@ import { LoginDto } from '../../nest-auth.core/dtos/login.dto';
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @HttpCode(HttpStatus.OK)
   @Post('register')

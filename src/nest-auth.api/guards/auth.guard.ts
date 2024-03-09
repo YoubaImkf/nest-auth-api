@@ -8,7 +8,7 @@ import { Request } from 'express';
 
 @Injectable()
 export class AuthGuard {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
