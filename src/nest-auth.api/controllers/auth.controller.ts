@@ -8,10 +8,10 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { AuthService } from '../nest-auth.core/services/auth.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AddUserDto } from '../dtos/addUser.dto';
-import { AuthGuard } from './auth.guard';
+import { AuthGuard } from '../guards/auth.guard';
 import { LoginDto } from '../dtos/login.dto';
 
 @ApiBearerAuth()

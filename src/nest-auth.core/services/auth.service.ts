@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { UsersService } from './users.service';
 import { AddUserDto } from '../dtos/addUser.dto';
 import { UserDto } from '../dtos/user.dto';
 import * as argon2 from 'argon2';
@@ -13,7 +13,7 @@ import { Auth } from '../entities/auth.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/entities/users.entity';
 import { LoginDto } from '../dtos/login.dto';
-import { tokenConstants } from './constants';
+import { tokenConstants } from '../constants/token.constants';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -37,7 +37,7 @@ export class AuthService {
     }
   }
 
-  async login(userLoginDto: LoginDto) {
+  async login(userLoginDto: LoginDto): Promise<{ access_token: string }> {
     const user = await this.usersService.getUserByEmail(userLoginDto.email);
 
     if (!user) throw new NotFoundException();

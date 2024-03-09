@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { tokenConstants } from './constants';
+import { tokenConstants } from '../constants/token.constants';
 import * as argon2 from 'argon2';
 import crc from 'crc';
 

@@ -1,10 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from './config/config.module';
-import { DatabaseModule } from './Infrastructure/database.module';
-import { AuthController } from './auth/auth.controller';
-import { logger } from './middlewares/logger.middleware';
-import { ThrottlersModule } from './infrastructure/throttlers.module';
+import { AuthModule } from './nest-auth.core/modules/auth.module';
+import { ConfigModule } from './nest-auth.core/modules/config.module';
+import { DatabaseModule } from './nest.auth.infrastructure/data/database.module';
+import { AuthController } from './nest-auth.api/controllers/auth.controller';
+import { logger } from './nest-auth.api/middlewares/logger.middleware';
+import { ThrottlersModule } from './nest-auth.core/modules/throttlers.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
