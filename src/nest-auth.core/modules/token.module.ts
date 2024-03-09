@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TokenService } from '../nest-auth.core/services/token.service';
+import { TokenService } from '../services/token.service';
 
 @Module({
   providers: [TokenService],

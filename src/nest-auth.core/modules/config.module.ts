@@ -1,7 +1,7 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
-import { ConfigService } from '../nest-auth.core/services/config.service';
-import { ConfigOptionsInterface } from '../config/interfaces/configOptions.interface';
-import { CONFIG_OPTIONS } from '../constants/config.constants';
+import { ConfigService } from '../services/config.service';
+import { ConfigOptionsInterface } from "../../nest.auth.infrastructure/config/interfaces/configOptions.interface";
+import { CONFIG_OPTIONS } from "../../nest.auth.infrastructure/config/constants/config.constants";
 
 @Global()
 @Module({})

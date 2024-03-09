@@ -11,7 +11,7 @@ import * as argon2 from 'argon2';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Auth } from '../entities/auth.entity';
 import { Repository } from 'typeorm';
-import { User } from 'src/entities/users.entity';
+import { User } from 'src/nest-auth.core/entities/users.entity';
 import { LoginDto } from '../dtos/login.dto';
 import { tokenConstants } from '../constants/token.constants';
 import { TokenService } from './token.service';
@@ -48,7 +48,7 @@ export class AuthService {
     );
 
     if (!passwordMatches)
-      throw new BadRequestException('Credientials are incorrect');
+      throw new BadRequestException('Credentials are incorrect');
 
     const plainToken = this.tokenService.generateRandomString(180);
     const hashedToken = await this.tokenService.generateTokenHash(plainToken);
@@ -73,17 +73,16 @@ export class AuthService {
 
     const hashedToken = await this.tokenService.generateTokenHash(plainToken);
     const auth = await this.getToken(hashedToken);
-    const { token, expiresAt } = auth;
-
     const user = await this.getUserByToken(hashedToken);
 
-    console.log('user: ' + user);
-    const expiredBoolean = await this.tokenService.isTokenExprired(expiresAt);
+    const expiredBoolean = await this.tokenService.isTokenExpired(
+      auth.expiresAt,
+    );
 
-    if (!token || !expiredBoolean) {
+    if (!expiredBoolean) {
       throw new UnauthorizedException();
     }
-    const verifyPasswordBoolean = await this.matchHash(token, plainToken);
+    const verifyPasswordBoolean = await this.matchHash(auth.token, plainToken);
 
     if (!verifyPasswordBoolean) {
       new UnauthorizedException();
@@ -92,28 +91,24 @@ export class AuthService {
     return user;
   }
 
-  /**
+  /** **********************
    * --- Private methods ---
-   */
+   ** **********************/
   private async getToken(
     token: string,
   ): Promise<{ token: string; expiresAt: Date }> {
-    try {
-      const auth = await this.authRepository.findOneBy({
-        token: token,
-      });
+    const auth = await this.authRepository.findOneBy({
+      token: token,
+    });
 
-      if (!auth.token || !auth.expiresAt) {
-        throw new UnauthorizedException();
-      }
-
-      return {
-        token: auth.token,
-        expiresAt: auth.expiresAt,
-      };
-    } catch (error) {
-      throw new Error('Error while fetching tokens.');
+    if (!auth.token || !auth.expiresAt) {
+      throw new UnauthorizedException();
     }
+
+    return {
+      token: auth.token,
+      expiresAt: auth.expiresAt,
+    };
   }
 
   async getUserByToken(token: string): Promise<UserDto | undefined> {
@@ -126,14 +121,13 @@ export class AuthService {
   }
 
   private mapUserToDto(user: User): UserDto {
-    const userDto: UserDto = {
+    return {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
       isActive: user.isActive,
       createdAt: user.createdAt,
     };
-    return userDto;
   }
 
   private async saveOrUpdate(hashedToken: string, user: User): Promise<void> {

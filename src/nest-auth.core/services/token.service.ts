@@ -46,7 +46,7 @@ export class TokenService {
     return new Date(expirationTime);
   }
 
-  async isTokenExprired(expiresAt: Date): Promise<boolean> {
+  async isTokenExpired(expiresAt: Date): Promise<boolean> {
     const currentDate = new Date();
     return expiresAt > currentDate; // Returns true if the expiration date is in the future
   }

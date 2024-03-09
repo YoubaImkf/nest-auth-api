@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../entities/users.entity';
 import { Repository } from 'typeorm';
-import { AddUserDto } from 'src/dtos/addUser.dto';
+import { AddUserDto } from 'src/nest-auth.core/dtos/addUser.dto';
 import { UserDto } from '../dtos/user.dto';
 import { plainToInstance } from 'class-transformer';
 import { ValidationError, validate } from 'class-validator';

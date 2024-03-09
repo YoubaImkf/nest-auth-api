@@ -3,7 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthService } from '../nest-auth.core/services/auth.service';
+import { AuthService } from '../../nest-auth.core/services/auth.service';
 import { Request } from 'express';
 
 @Injectable()
